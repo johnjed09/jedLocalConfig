@@ -623,6 +623,9 @@ require("lazy").setup({
 			--  - settings (table): Override the default settings passed when initializing the server.
 			--        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
 			local servers = {
+				html = {},
+				prettier = {},
+				eslint = {},
 				-- clangd = {},
 				-- gopls = {},
 				-- pyright = {},
@@ -720,6 +723,8 @@ require("lazy").setup({
 			end,
 			formatters_by_ft = {
 				lua = { "stylua" },
+				html = { "prettier" },
+				javascript = { "prettier" },
 				-- Conform can also run multiple formatters sequentially
 				-- python = { "isort", "black" },
 				--
@@ -806,6 +811,7 @@ require("lazy").setup({
 
 			sources = {
 				default = { "lsp", "path", "snippets", "lazydev" },
+
 				providers = {
 					lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
 				},
@@ -900,8 +906,10 @@ require("lazy").setup({
 			ensure_installed = {
 				"bash",
 				"c",
+				"css",
+				"scss",
 				"diff",
-				"html",
+				"javascript",
 				"lua",
 				"luadoc",
 				"markdown",
@@ -995,6 +1003,10 @@ require("lazy").setup({
 			vim.keymap.set("n", "zR", require("ufo").openAllFolds)
 			vim.keymap.set("n", "zM", require("ufo").closeAllFolds)
 		end,
+	},
+
+	{
+		"sindrets/diffview.nvim",
 	},
 
 	-- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the

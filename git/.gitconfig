@@ -1,0 +1,9 @@
+[user]
+	email = getesjohnjed09@gmail.com
+	name = jedDev
+
+[core]
+	editor = nvim
+[merge]
+	tool = nvimdiff
+	keepBackupmerge = false
