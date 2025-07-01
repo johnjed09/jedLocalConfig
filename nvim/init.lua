@@ -1,3 +1,6 @@
+vim.o.softtabstop = 4
+vim.o.shiftwidth = 4
+
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
@@ -27,6 +30,7 @@ vim.o.mouse = "a"
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
 
+-- Collapse/expand
 vim.o.foldmethod = "manual"
 
 -- Sync clipboard between OS and Neovim.
@@ -625,7 +629,7 @@ require("lazy").setup({
 			local servers = {
 				html = {},
 				prettier = {},
-				eslint = {},
+				eslint_d = {},
 				-- clangd = {},
 				-- gopls = {},
 				-- pyright = {},
@@ -636,8 +640,7 @@ require("lazy").setup({
 				--    https://github.com/pmizio/typescript-tools.nvim
 				--
 				-- But for many setups, the LSP (`ts_ls`) will work just fine
-				-- ts_ls = {},
-				--
+				ts_ls = {},
 
 				lua_ls = {
 					-- cmd = { ... },
@@ -668,6 +671,7 @@ require("lazy").setup({
 			--
 			-- You can add other tools here that you want Mason to install
 			-- for you, so that they are available from within Neovim.
+
 			local ensure_installed = vim.tbl_keys(servers or {})
 			vim.list_extend(ensure_installed, {
 				"stylua", -- Used to format Lua code
@@ -705,33 +709,38 @@ require("lazy").setup({
 				desc = "[F]ormat buffer",
 			},
 		},
-		opts = {
-			notify_on_error = false,
-			format_on_save = function(bufnr)
-				-- Disable "format_on_save lsp_fallback" for languages that don't
-				-- have a well standardized coding style. You can add additional
-				-- languages here or re-enable it for the disabled ones.
-				local disable_filetypes = { c = true, cpp = true }
-				if disable_filetypes[vim.bo[bufnr].filetype] then
-					return nil
-				else
-					return {
-						timeout_ms = 500,
-						lsp_format = "fallback",
-					}
-				end
-			end,
-			formatters_by_ft = {
-				lua = { "stylua" },
-				html = { "prettier" },
-				javascript = { "prettier" },
-				-- Conform can also run multiple formatters sequentially
-				-- python = { "isort", "black" },
-				--
-				-- You can use 'stop_after_first' to run the first available formatter from the list
-				-- javascript = { "prettierd", "prettier", stop_after_first = true },
-			},
-		},
+		opts = function()
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				pattern = "*",
+				callback = function()
+					require("conform").format({ async = true, lsp_format = "fallback" })
+				end,
+			})
+
+			return {
+				notify_on_error = false,
+				format_on_save = function(bufnr)
+					-- Disable "format_on_save lsp_fallback" for languages that don't
+					-- have a well standardized coding style. You can add additional
+					-- languages here or re-enable it for the disabled ones.
+					local disable_filetypes = { c = true, cpp = true }
+					if disable_filetypes[vim.bo[bufnr].filetype] then
+						return nil
+					else
+						return {
+							timeout_ms = 500,
+							lsp_format = "fallback",
+						}
+					end
+				end,
+				formatters_by_ft = {
+					lua = { "stylua" },
+					html = { "prettier" },
+					javascript = { "prettier" },
+					typescriptreact = { "prettier" },
+				},
+			}
+		end,
 	},
 
 	{ -- Autocompletion
@@ -834,6 +843,33 @@ require("lazy").setup({
 	},
 
 	{
+		"mfussenegger/nvim-lint",
+		event = {
+			"BufReadPre",
+			"BufNewFile",
+		},
+		config = function()
+			local lint = require("lint")
+
+			lint.linters_by_ft = {
+				javascript = { "eslint_d" },
+			}
+
+			local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
+			vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
+				group = lint_augroup,
+				callback = function()
+					lint.try_lint()
+				end,
+			})
+
+			vim.keymap.set("n", "<leader>ll", function()
+				lint.try_lint()
+			end, { desc = "Trigger linting for current file" })
+		end,
+	},
+
+	{
 		"sainnhe/sonokai",
 		lazy = false,
 		priority = 1000,
@@ -850,7 +886,6 @@ require("lazy").setup({
 			vim.api.nvim_set_hl(0, "FloatBorder", { bg = "none", fg = "#5A5E7A" })
 		end,
 	},
-
 	-- Highlight todo, notes, etc in comments
 	{
 		"folke/todo-comments.nvim",
@@ -969,6 +1004,9 @@ require("lazy").setup({
 			vim.keymap.set("n", "<leader>4", function()
 				harpoon:list():select(4)
 			end)
+			vim.keymap.set("n", "<leader>5", function()
+				harpoon:list():select(5)
+			end)
 		end,
 	},
 
@@ -996,12 +1034,12 @@ require("lazy").setup({
 		opts = function()
 			vim.o.foldcolumn = "1" -- '0' is not bad
 			vim.o.foldlevel = 99 -- Using ufo provider need a large value, feel free to decrease the value
-			vim.o.foldlevelstart = 99
+			vim.o.foldlevelstart = -1
 			vim.o.foldenable = true
 
 			-- Using ufo provider need remap `zR` and `zM`. If Neovim is 0.6.1, remap yourself
 			vim.keymap.set("n", "zR", require("ufo").openAllFolds)
-			vim.keymap.set("n", "zM", require("ufo").closeAllFolds)
+			vim.keymap.set("n", "zm", require("ufo").closeAllFolds)
 		end,
 	},
 	-- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
@@ -1015,7 +1053,7 @@ require("lazy").setup({
 	--
 	-- require 'kickstart.plugins.debug',
 	-- require 'kickstart.plugins.indent_line',
-	-- require 'kickstart.plugins.lint',
+	-- require("kickstart.plugins.lint"),
 	-- require 'kickstart.plugins.autopairs',
 	-- require 'kickstart.plugins.neo-tree',
 	-- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
