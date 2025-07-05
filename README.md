@@ -11,3 +11,11 @@ sudo add-apt-repository ppa:neovim-ppa/unstable -y
 sudo apt update
 sudo apt install make gcc ripgrep unzip git xclip neovim
 ```
+
+## Tmux
+1. Install tmux.
+2. Config on your home(~) location
+3. Copy/paste .tmux.conf file to home location/exclude directory/folder.
+```
+cp -r tmux ~
+```
